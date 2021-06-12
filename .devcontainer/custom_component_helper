@@ -4,6 +4,9 @@ function StartHomeAssistant {
   echo "Copy configuration.yaml"
   cp -f .devcontainer/configuration.yaml /config || echo ".devcontainer/configuration.yaml are missing!" exit 1
 
+  echo "Copy upcoming-media-card.js"
+  cp -f .devcontainer/upcoming-media-card.js /www/custom-lovelace/ || echo ".devcontainer/upcoming-media-card.js are missing!" exit 1
+
   echo "Copy the custom component"
   rm -R /config/custom_components/ || echo ""
   cp -r custom_components /config/custom_components/ || echo "Could not copy the custom_component" exit 1

@@ -83,7 +83,7 @@ class ClaroTVSensor(Entity):
                             poster=self._channel_logo,
                             fanart=self._channel_logo,
                             runtime=programation["dh_inicio"].split("T")[1].split("Z")[0],
-                            release="$date",
+                            release=programation["dh_inicio"].split("T")[1].split("Z")[0],
                             airdate=programation["dh_inicio"].split("T")[1].split("Z")[0],
                         )
                     )
