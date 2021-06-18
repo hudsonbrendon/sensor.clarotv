@@ -5,10 +5,13 @@ For more details on this component, refer to the documentation at
 https://github.com/hudsonbrendon/sensor.clarotv
 """
 import logging
+from datetime import datetime, timedelta
 
 import async_timeout
 import homeassistant.helpers.config_validation as cv
+import pytz
 import voluptuous as vol
+from dateutil.relativedelta import relativedelta
 from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
 from homeassistant.helpers.entity import Entity
@@ -16,10 +19,11 @@ from homeassistant.helpers.entity import Entity
 CONF_CHANNEL_ID = "channel_id"
 CONF_CHANNEL_NAME = "channel_name"
 CONF_CHANNEL_LOGO = "channel_logo"
+SCAN_INTERVAL = timedelta(minutes=10)
 
 ICON = "mdi:video"
 
-BASE_URL = "https://programacao.claro.com.br/gatekeeper/exibicao/select?q=id_cidade:1&wt=json&rows=10&sort=dh_inicio%20asc&fl=dh_inicio%20st_titulo%20titulo%20id_programa%20id_exibicao&fq=id_canal:{}"
+BASE_URL = "https://programacao.claro.com.br/gatekeeper/exibicao/select?q=id_cidade:1&wt=json&sort=dh_inicio%20asc&fl=dh_inicio%20st_titulo%20titulo%20id_programa%20id_exibicao&fq=dh_inicio:%5B{}%20TO%20{}%5D&fq=id_canal:{}"
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
@@ -60,7 +64,14 @@ class ClaroTVSensor(Entity):
         """Update sensor."""
         _LOGGER.debug("%s - Running update", self._name)
         try:
-            url = BASE_URL.format(self._channel_id)
+
+            first_date = datetime.now(pytz.timezone("America/Sao_Paulo"))
+            second_date = first_date + relativedelta(months=1)
+            url = BASE_URL.format(
+                first_date.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                second_date.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                self._channel_id,
+            )
             async with async_timeout.timeout(10, loop=self.hass.loop):
                 response = await self.session.get(url)
                 programations = await response.json()
@@ -82,9 +93,15 @@ class ClaroTVSensor(Entity):
                             title=programation["titulo"],
                             poster=self._channel_logo,
                             fanart=self._channel_logo,
-                            runtime=programation["dh_inicio"].split("T")[1].split("Z")[0],
-                            release=programation["dh_inicio"].split("T")[1].split("Z")[0],
-                            airdate=programation["dh_inicio"].split("T")[1].split("Z")[0],
+                            runtime=programation["dh_inicio"]
+                            .split("T")[1]
+                            .split("Z")[0],
+                            release=programation["dh_inicio"]
+                            .split("T")[1]
+                            .split("Z")[0],
+                            airdate=programation["dh_inicio"]
+                            .split("T")[1]
+                            .split("Z")[0],
                         )
                     )
 
@@ -104,7 +121,11 @@ class ClaroTVSensor(Entity):
     @property
     def programations(self):
         """Programations."""
-        return [i for n, i in enumerate(self._programations) if i not in self._programations[n + 1 :]]
+        return [
+            i
+            for n, i in enumerate(self._programations)
+            if i not in self._programations[n + 1 :]
+        ]
 
     @property
     def icon(self):
