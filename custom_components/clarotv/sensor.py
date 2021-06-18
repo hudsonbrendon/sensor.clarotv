@@ -63,10 +63,9 @@ class ClaroTVSensor(Entity):
     async def async_update(self):
         """Update sensor."""
         _LOGGER.debug("%s - Running update", self._name)
+        first_date = datetime.now(pytz.timezone("America/Sao_Paulo"))
+        second_date = first_date + relativedelta(months=1)
         try:
-
-            first_date = datetime.now(pytz.timezone("America/Sao_Paulo"))
-            second_date = first_date + relativedelta(months=1)
             url = BASE_URL.format(
                 first_date.strftime("%Y-%m-%dT%H:%M:%SZ"),
                 second_date.strftime("%Y-%m-%dT%H:%M:%SZ"),

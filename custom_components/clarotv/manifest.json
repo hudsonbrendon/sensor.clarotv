@@ -1,7 +1,7 @@
 {
   "domain": "clarotv",
   "name": "Claro TV",
-  "version": "0.2.4",
+  "version": "0.3.4",
   "documentation": "https://github.com/hudsonbrendon/sensor.claro.com.br",
   "dependencies": [],
   "codeowners": ["@hudsonbrendon"],
