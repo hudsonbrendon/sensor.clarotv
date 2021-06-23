@@ -16,6 +16,7 @@ from homeassistant.const import (
     CONF_RESOURCES,
     STATE_UNKNOWN,
 )
+from homeassistant.helpers.entity import Entity
 from homeassistant.util import Throttle
 
 _LOGGER = logging.getLogger(__name__)
@@ -101,16 +102,17 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
     )
 
 
-class ClaroTVSensor(SensorEntity):
+class ClaroTVSensor(Entity):
     def __init__(self, hass, name, channel_id, channel_name, channel_logo, interval):
         """Inizialize sensor"""
         self._state = STATE_UNKNOWN
         self._hass = hass
-        self.interval = interval
+        self._interval = interval
         self._channel_id = channel_id
         self._channel_name = channel_name
         self._channel_logo = channel_logo
         self._name = name
+        self._programations = {}
 
     @property
     def name(self):
@@ -129,15 +131,12 @@ class ClaroTVSensor(SensorEntity):
         return now.strftime("%d-%m-%Y %H:%M:%S")
 
     @property
-    def extra_state_attributes(self):
-        """Return the state attributes of the sensor."""
-        return {ATTR_ATTRIBUTION: ATTRIBUTION}
-
-    @property
     def device_state_attributes(self):
         """Attributes."""
-        return {"data": Throttle(self.interval)(self.update)}
+        return {"data": self._programations}
 
     def update(self):
         """Get the latest update fron the api"""
-        return get_data(self._channel_id, self._channel_name, self._channel_logo)
+        self._programations = get_data(
+            self._channel_id, self._channel_name, self._channel_logo
+        )
