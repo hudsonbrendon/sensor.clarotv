@@ -5,5 +5,6 @@
   "documentation": "https://github.com/hudsonbrendon/sensor.claro.com.br",
   "dependencies": [],
   "codeowners": ["@hudsonbrendon"],
-  "requirements": []
+  "requirements": [],
+  "iot_class": "local_polling"
 }
