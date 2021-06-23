@@ -1,4 +1,7 @@
+import json
 import logging
+import string
+from collections import defaultdict
 from datetime import datetime, timedelta
 
 import homeassistant.helpers.config_validation as cv
@@ -6,8 +9,13 @@ import pytz
 import requests
 import voluptuous as vol
 from dateutil.relativedelta import relativedelta
-from homeassistant.components.sensor import PLATFORM_SCHEMA
-from homeassistant.const import STATE_UNKNOWN
+from homeassistant.components.sensor import PLATFORM_SCHEMA, SensorEntity
+from homeassistant.const import (
+    ATTR_ATTRIBUTION,
+    CONF_NAME,
+    CONF_RESOURCES,
+    STATE_UNKNOWN,
+)
 from homeassistant.helpers.entity import Entity
 from homeassistant.util import Throttle
 
@@ -34,6 +42,46 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
 )
 
 BASE_URL = "https://programacao.claro.com.br/gatekeeper/exibicao/select?q=id_cidade:1&wt=json&sort=dh_inicio%20asc&fl=dh_inicio%20st_titulo%20titulo%20id_programa%20id_exibicao&fq=dh_inicio:%5B{}%20TO%20{}%5D&fq=id_canal:{}"
+
+
+def get_data(channel_id, channel_name, channel_logo):
+    """Get The request from the api"""
+    first_date = datetime.now(pytz.timezone("America/Sao_Paulo"))
+    second_date = first_date + relativedelta(months=1)
+    programations = []
+    url = BASE_URL.format(
+        first_date.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        second_date.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        channel_id,
+    )
+    response = requests.get(url)
+    if response.ok:
+        programations.append(
+            {
+                "title_default": "$title",
+                "line1_default": "",
+                "line2_default": "$release",
+                "line3_default": "$runtime",
+                "line4_default": channel_name,
+                "icon": "mdi:arrow-down-bold",
+            }
+        )
+
+        for programation in response.json().get("response").get("docs"):
+            programations.append(
+                dict(
+                    title=programation["titulo"],
+                    poster=channel_logo,
+                    fanart=channel_logo,
+                    runtime=programation["dh_inicio"].split("T")[1].split("Z")[0],
+                    release=programation["dh_inicio"].split("T")[1].split("Z")[0],
+                    airdate=programation["dh_inicio"].split("T")[1].split("Z")[0],
+                )
+            )
+
+    else:
+        _LOGGER.error("Cannot perform the request")
+    return programations
 
 
 def setup_platform(hass, config, add_entities, discovery_info=None):
@@ -64,7 +112,7 @@ class ClaroTVSensor(Entity):
         self._channel_name = channel_name
         self._channel_logo = channel_logo
         self._name = name
-        self._programations = []
+        self._programations = {}
 
     @property
     def name(self):
@@ -89,37 +137,6 @@ class ClaroTVSensor(Entity):
 
     def update(self):
         """Get the latest update fron the api"""
-        first_date = datetime.now(pytz.timezone("America/Sao_Paulo"))
-        second_date = first_date + relativedelta(months=1)
-        url = BASE_URL.format(
-            first_date.strftime("%Y-%m-%dT%H:%M:%SZ"),
-            second_date.strftime("%Y-%m-%dT%H:%M:%SZ"),
-            self._channel_id,
+        self._programations = get_data(
+            self._channel_id, self._channel_name, self._channel_logo
         )
-        response = requests.get(url)
-        if response.ok:
-            self._programations.append(
-                {
-                    "title_default": "$title",
-                    "line1_default": "",
-                    "line2_default": "$release",
-                    "line3_default": "$runtime",
-                    "line4_default": self._channel_name,
-                    "icon": "mdi:arrow-down-bold",
-                }
-            )
-
-            for programation in response.json().get("response").get("docs"):
-                self._programations.append(
-                    dict(
-                        title=programation["titulo"],
-                        poster=self._channel_logo,
-                        fanart=self._channel_logo,
-                        runtime=programation["dh_inicio"].split("T")[1].split("Z")[0],
-                        release=programation["dh_inicio"].split("T")[1].split("Z")[0],
-                        airdate=programation["dh_inicio"].split("T")[1].split("Z")[0],
-                    )
-                )
-
-        else:
-            _LOGGER.error("{} Request error".format(self._name))
