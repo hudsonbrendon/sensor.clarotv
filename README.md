@@ -26,13 +26,7 @@ Componente customizado para obter informações sobre a programação da Claro T
 ```yaml
 - platform: clarotv
   channel_id: channel_id
-  channel_name: channel_name
-  channel_logo: channel_logo
 ```
-
-## Configurand o channel_name
-
-Você pode dar o nome que quiser ao seu canal, eu sempre sigo o padrão de nomear com o canal que estou configurando.
 
 ## Obtendo o channel_id
 
@@ -42,17 +36,11 @@ O **channel_id** se encontra no fim da URL da página do canal que você acessou
 
 Onde **1056** é o **channel_id**.
 
-## Obtendo o channel_logo
-
-Você pode usar qualquer url de imagem, mas eu recomendo utilizar a imagem disponível na própria página do canal que você acessou acima. Para isso, clique com o botão direito do mouse sobre a imagem, e selecione a opção **Copiar endereço da imagem**.
-
 Example:
 
 ```yaml
 - platform: clarotv
   channel_id: 1056
-  channel_name: Off
-  channel_logo: https://www.claro.com.br/imagem/canal-off-1509144657569.jpg
 ```
 
 # Suporte ao card Upcoming media card
@@ -63,7 +51,7 @@ instale via hacs e adicione a configuração abaixo (Lembre-se de substituir sen
 
 ```yaml
 type: custom:upcoming-media-card
-entity: sensor.off
+entity: sensor.canal_off
 title: Canal Off
 ```
 

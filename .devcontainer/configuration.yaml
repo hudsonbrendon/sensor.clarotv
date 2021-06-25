@@ -7,5 +7,3 @@ logger:
 sensor:
   platform: clarotv
   channel_id: 1606
-  channel_name: Warner
-  channel_logo: https://upload.wikimedia.org/wikipedia/commons/thumb/6/64/Warner_Bros_logo.svg/1200px-Warner_Bros_logo.svg.png

@@ -30,21 +30,18 @@ ATTRIBUTION = "Data provided by clarotv api"
 DOMAIN = "clarotv"
 
 CONF_CHANNEL_ID = "channel_id"
-CONF_CHANNEL_NAME = "channel_name"
-CONF_CHANNEL_LOGO = "channel_logo"
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
         vol.Required(CONF_CHANNEL_ID): cv.string,
-        vol.Required(CONF_CHANNEL_NAME): cv.string,
-        vol.Required(CONF_CHANNEL_LOGO): cv.string,
     }
 )
 
 BASE_URL = "https://programacao.claro.com.br/gatekeeper/exibicao/select?q=id_cidade:1&wt=json&sort=dh_inicio%20asc&fl=dh_inicio%20st_titulo%20titulo%20id_programa%20id_exibicao&fq=dh_inicio:%5B{}%20TO%20{}%5D&fq=id_canal:{}"
+NAME_LOGO_CHANNEL_URL = "https://programacao.claro.com.br/gatekeeper/canal/select?q=id_cidade:1&wt=json&rows=1&fq=id_canal:{}"
 
 
-def get_data(channel_id, channel_name, channel_logo):
+def get_data(channel_id):
     """Get The request from the api"""
     first_date = datetime.now(pytz.timezone("America/Sao_Paulo"))
     second_date = first_date + relativedelta(months=1)
@@ -54,6 +51,15 @@ def get_data(channel_id, channel_name, channel_logo):
         second_date.strftime("%Y-%m-%dT%H:%M:%SZ"),
         channel_id,
     )
+    channel = {}
+
+    response = requests.get(NAME_LOGO_CHANNEL_URL.format(channel_id))
+
+    if response.ok:
+        channel = response.json().get("response").get("docs")[0]
+    else:
+        _LOGGER.error("Cannot perform the request")
+
     response = requests.get(url)
     if response.ok:
         programations.append(
@@ -62,7 +68,7 @@ def get_data(channel_id, channel_name, channel_logo):
                 "line1_default": "",
                 "line2_default": "$release",
                 "line3_default": "$runtime",
-                "line4_default": channel_name,
+                "line4_default": channel.get("nome"),
                 "icon": "mdi:arrow-down-bold",
             }
         )
@@ -71,14 +77,13 @@ def get_data(channel_id, channel_name, channel_logo):
             programations.append(
                 dict(
                     title=programation["titulo"],
-                    poster=channel_logo,
-                    fanart=channel_logo,
+                    poster=channel.get("url_imagem"),
+                    fanart=channel.get("url_imagem"),
                     runtime=programation["dh_inicio"].split("T")[1].split("Z")[0],
                     release=programation["dh_inicio"].split("T")[1].split("Z")[0],
                     airdate=programation["dh_inicio"].split("T")[1].split("Z")[0],
                 )
             )
-
     else:
         _LOGGER.error("Cannot perform the request")
     return programations
@@ -88,30 +93,21 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
     """Setup the currency sensor"""
 
     channel_id = config["channel_id"]
-    channel_name = config["channel_name"]
-    channel_logo = config["channel_logo"]
-    name = channel_name.capitalize()
 
     add_entities(
-        [
-            ClaroTVSensor(
-                hass, name, channel_id, channel_name, channel_logo, SCAN_INTERVAL
-            )
-        ],
+        [ClaroTVSensor(hass, channel_id, SCAN_INTERVAL)],
         True,
     )
 
 
 class ClaroTVSensor(Entity):
-    def __init__(self, hass, name, channel_id, channel_name, channel_logo, interval):
+    def __init__(self, hass, channel_id, interval):
         """Inizialize sensor"""
         self._state = STATE_UNKNOWN
         self._hass = hass
         self._interval = interval
         self._channel_id = channel_id
-        self._channel_name = channel_name
-        self._channel_logo = channel_logo
-        self._name = name
+        self._name = ""
         self._programations = {}
 
     @property
@@ -137,6 +133,5 @@ class ClaroTVSensor(Entity):
 
     def update(self):
         """Get the latest update fron the api"""
-        self._programations = get_data(
-            self._channel_id, self._channel_name, self._channel_logo
-        )
+        self._programations = get_data(self._channel_id)
+        self._name = self._programations[0].get("line4_default")
