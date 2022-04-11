@@ -127,7 +127,7 @@ class ClaroTVSensor(Entity):
         return now.strftime("%d-%m-%Y %H:%M:%S")
 
     @property
-    def device_state_attributes(self):
+    def extra_state_attributes(self):
         """Attributes."""
         return {"data": self._programations}
 
