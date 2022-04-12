@@ -10,7 +10,7 @@ Componente customizado para obter informações sobre a programação da Claro T
 
 ## HACS
 
-- Tenha o [HACS] (https://hacs.xyz/) instalado, isso permitirá que você atualize facilmente.
+- Tenha o [HACS](https://hacs.xyz/) instalado, isso permitirá que você atualize facilmente.
 - Adicione https://github.com/hudsonbrendon/sensor.clarotv como um repositório personalizado do Tipo: Integração
 - Clique em Instalar na integração "Clarotv".
 - Reinicie Home-Assistant.
