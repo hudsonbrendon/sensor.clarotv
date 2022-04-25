@@ -10,14 +10,11 @@ import requests
 import voluptuous as vol
 from dateutil.relativedelta import relativedelta
 from homeassistant.components.sensor import PLATFORM_SCHEMA, SensorEntity
-from homeassistant.const import (
-    ATTR_ATTRIBUTION,
-    CONF_NAME,
-    CONF_RESOURCES,
-    STATE_UNKNOWN,
-)
+from homeassistant.const import STATE_UNKNOWN
 from homeassistant.helpers.entity import Entity
 from homeassistant.util import Throttle
+
+from .const import ATTRIBUTION, BASE_URL, CONF_CHANNEL_ID, DOMAIN, NAME_LOGO_CHANNEL_URL
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -25,21 +22,13 @@ ICON = "mdi:television-classic"
 
 SCAN_INTERVAL = timedelta(seconds=60)
 
-ATTRIBUTION = "Data provided by clarotv api"
 
-DOMAIN = "clarotv"
-
-CONF_CHANNEL_ID = "channel_id"
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
         vol.Required(CONF_CHANNEL_ID): cv.string,
     }
 )
-
-BASE_URL = "https://programacao.claro.com.br/gatekeeper/exibicao/select?q=id_cidade:1&wt=json&sort=dh_inicio%20asc&fl=dh_inicio%20st_titulo%20titulo%20id_programa%20id_exibicao&fq=dh_inicio:%5B{}%20TO%20{}%5D&fq=id_canal:{}"
-NAME_LOGO_CHANNEL_URL = "https://programacao.claro.com.br/gatekeeper/canal/select?q=id_cidade:1&wt=json&rows=1&fq=id_canal:{}"
-
 
 def get_data(channel_id):
     """Get The request from the api"""
@@ -123,8 +112,7 @@ class ClaroTVSensor(Entity):
     @property
     def state(self):
         """Return the state of the sensor"""
-        now = datetime.now(pytz.timezone("America/Sao_Paulo"))
-        return now.strftime("%d-%m-%Y %H:%M:%S")
+        return self._current_television_program()
 
     @property
     def extra_state_attributes(self):
@@ -135,3 +123,6 @@ class ClaroTVSensor(Entity):
         """Get the latest update fron the api"""
         self._programations = get_data(self._channel_id)
         self._name = self._programations[0].get("line4_default")
+
+    def _current_television_program(self):
+        return self._programations[1]["title"]
